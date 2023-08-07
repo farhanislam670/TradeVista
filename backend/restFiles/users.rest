@@ -1,0 +1,24 @@
+### GET getMe i.e., Get my profile
+GET http://localhost:5000/api/users/me
+
+### POST signupUser
+POST http://localhost:5000/api/users
+content-type: application/json
+
+{
+  "fname": "Mohammed Farhan",
+  "lname": "Islam",
+  "email": "farhanislam680@gmail.com",
+  "password": "shopcandy54321",
+  "address": "Ionia",
+  "phone_number": "+8801312584394"
+}
+
+### POST signinUser
+POST http://localhost:5000/api/users/signin
+content-type: application/json
+
+{
+  "email": "farhanislam680@gmail.com",
+  "password": "shopcandy54321"
+}
