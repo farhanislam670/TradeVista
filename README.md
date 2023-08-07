@@ -1,2 +1,2 @@
-# Teebay
+# TradeVista
 PERN + RTK Query 
