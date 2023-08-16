@@ -1,11 +1,40 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../prisma");
 
+// @desc    Get all products
+// @route   GET /api/marketplace
+// @access  Public
+const getAllProducts = asyncHandler(async (req, res) => {
+  const products = await prisma.product.findMany({
+    include: {
+      product_categories: {
+        select: {
+          category: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const productData = products.map((product) => {
+    const categories = product.product_categories.map((pc) => pc.category.name);
+    return { ...product, product_categories: categories };
+  });
+
+  res.status(200).json(productData);
+});
+
 // @desc    Get Products
 // @route   GET /api/products
 // @access  Private
 const getProducts = asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
+    where: {
+      user_id: req.user.user_id,
+    },
     include: {
       product_categories: {
         select: {
@@ -90,6 +119,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getAllProducts,
   getProducts,
   setProduct,
   updateProduct,

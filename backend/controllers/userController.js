@@ -90,7 +90,22 @@ const signinUser = asyncHandler(async (req, res) => {
 // @route GET /api/users/me
 // @access Private
 const getMe = asyncHandler(async (req, res) => {
-  res.json({ message: "User data" });
+  console.log(req.user);
+  const { user_id, fname, lname, email, phone_number, address } =
+    await prisma.users.findUnique({
+      where: {
+        user_id: req.user.user_id,
+      },
+    });
+
+  res.status(200).json({
+    user_id: user_id,
+    fname: fname,
+    lname: lname,
+    email: email,
+    phone_number: phone_number,
+    address: address,
+  });
 });
 
 // Generate JWT

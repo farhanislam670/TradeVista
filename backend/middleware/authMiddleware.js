@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const prisma = require("../prisma");
+const { exclude } = require("../utils/excludeRequestFields");
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -17,14 +18,13 @@ const protect = asyncHandler(async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      req.user = await prisma.users
-        .findUnique({
-          where: {
-            user_id: decoded.id,
-          },
-        })
-        .select("-password");
+      req.user = await prisma.users.findUnique({
+        where: {
+          user_id: decoded.id,
+        },
+      });
 
+      req.user = exclude(req.user, ["password"]);
       next();
     } catch (error) {
       console.log(error);
@@ -35,7 +35,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
   if (!token) {
     res.status(401);
-    throw new Error("Not authorized, no token");
+    throw new Error("Not authorized, no token!");
   }
 });
 
