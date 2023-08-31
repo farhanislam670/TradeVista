@@ -27,7 +27,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
   res.status(200).json(productData);
 });
 
-// @desc    Get Products
+// @desc    Get user's own products
 // @route   GET /api/products
 // @access  Private
 const getProducts = asyncHandler(async (req, res) => {
@@ -56,66 +56,150 @@ const getProducts = asyncHandler(async (req, res) => {
   res.status(200).json(productData);
 });
 
-// @desc    Create Product
+// @desc    A user creates a product.
 // @route   POST /api/products
 // @access  Private
 const setProduct = asyncHandler(async (req, res) => {
   try {
-    const product = await prisma.product.create({ data: { ...req.body } });
-    res.status(200).json(product);
+    const { categories, ...productData } = req.body;
+
+    const createdProduct = await prisma.product.create({
+      data: { ...productData, user_id: req.user.user_id },
+    });
+
+    // Retrieve category IDs based on provided category names and associate the product with categories
+    const foundCategories = await prisma.category.findMany({
+      where: {
+        name: { in: categories },
+      },
+    });
+
+    const createdCategories = [];
+    for (const category of foundCategories) {
+      await prisma.product_categories.create({
+        data: {
+          product_id: createdProduct.product_id,
+          category_id: category.category_id,
+        },
+      });
+      createdCategories.push(category);
+    }
+
+    // Extract names from createdCategories
+    const createdCategoryNames = createdCategories.map(
+      (category) => category.name
+    );
+
+    const finalCreatedProduct = {
+      ...createdProduct,
+      createdCategoryNames,
+    };
+
+    res.status(200).json(finalCreatedProduct);
   } catch (error) {
     console.error(error);
     res.status(400).json({ message: "Please add a product!" });
   }
 });
 
-// @desc    Update Product
+// @desc    A user update's their product.
 // @route   PUT /api/products/:id
 // @access  Private
 const updateProduct = asyncHandler(async (req, res) => {
-  const product = await prisma.product.findUnique({
-    where: { product_id: parseInt(req.params.id) },
-  });
+  try {
+    const product = await prisma.product.findUnique({
+      where: { product_id: parseInt(req.params.id) },
+    });
+    if (!product) {
+      res.status(400);
+      throw new Error("Product not found");
+    }
 
-  if (!product) {
-    res.status(400);
-    throw new Error("Product not found");
+    const user = req.user.user_id;
+    if (!user) {
+      res.status(401);
+      throw new Error("User not found.");
+    }
+    if (product.user_id != user) {
+      res.status(401);
+      throw new Error("User not authorized.");
+    }
+
+    const { categories, ...productData } = req.body;
+    const updatedProduct = await prisma.product.update({
+      where: { product_id: parseInt(req.params.id) },
+      data: productData,
+    });
+
+    const foundCategories = await prisma.category.findMany({
+      where: {
+        name: { in: categories },
+      },
+    });
+
+    // Delete existing associations between the product and its categories
+    await prisma.product_categories.deleteMany({
+      where: {
+        product_id: updatedProduct.product_id,
+      },
+    });
+
+    // Create new associations between the product and the updated categories
+    for (const category of foundCategories) {
+      await prisma.product_categories.create({
+        data: {
+          product_id: updatedProduct.product_id,
+          category_id: category.category_id,
+        },
+      });
+    }
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: "Unfortunate." });
   }
-
-  const updatedProduct = await prisma.product.update({
-    where: { product_id: parseInt(req.params.id) },
-    data: req.body,
-    select: {
-      product_id: true,
-      title: true,
-      description: true,
-      price: true,
-      rent_price: true,
-      rent_duration_unit: true,
-      user_id: true,
-    },
-  });
-
-  res.status(200).json(updatedProduct);
 });
 
-// @desc    Delete Product
+// @desc    Delete a product
 // @route   DELETE /api/products/:id
 // @access  Private
 const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await prisma.product.findUnique({
-    where: { product_id: parseInt(req.params.id) },
-  });
+  try {
+    const product = await prisma.product.findUnique({
+      where: { product_id: parseInt(req.params.id) },
+    });
 
-  if (!product) {
-    res.status(400);
-    throw new Error("Product not found");
+    if (!product) {
+      res.status(400);
+      throw new Error("Product not found");
+    }
+
+    const user = req.user.user_id;
+    if (!user) {
+      res.status(401);
+      throw new Error("User not found.");
+    }
+    if (product.user_id != user) {
+      res.status(401);
+      throw new Error("User not authorized.");
+    }
+
+    await prisma.product_categories.deleteMany({
+      where: {
+        product_id: parseInt(req.params.id),
+      },
+    });
+
+    await prisma.product.delete({
+      where: { product_id: parseInt(req.params.id) },
+    });
+
+    res.status(200).json({ id: req.params.id });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: "Unfortunate." });
   }
-
-  await prisma.product.delete({
-    where: { product_id: parseInt(req.params.id) },
-  });
-  res.status(200).json({ id: req.params.id });
 });
 
 module.exports = {
