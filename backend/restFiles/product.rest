@@ -1,9 +1,11 @@
 ### GET getProductList
 GET http://localhost:5000/api/products
+Authorization: 
 
-
+### POST 
 POST http://localhost:5000/api/products
 content-type: application/json
+Authorization: 
 
 {
     
