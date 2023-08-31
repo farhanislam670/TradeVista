@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-const prisma = require("../prisma");
+const prisma = require("../prismaClient");
 const { exclude } = require("../utils/excludeRequestFields");
 
 const protect = asyncHandler(async (req, res, next) => {

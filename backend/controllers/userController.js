@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
-const prisma = require("../prisma");
+const prisma = require("../prismaClient");
 
 // @desc Register new user
 // @route POST /api/users

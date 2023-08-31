@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const prisma = require("../prisma");
+const prisma = require("../prismaClient");
 
 // @desc    Get all products
 // @route   GET /api/marketplace
